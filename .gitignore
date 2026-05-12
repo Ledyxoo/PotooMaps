@@ -1,0 +1,25 @@
+# Build directory
+build/
+bin/
+obj/
+
+# IDE files
+.vscode/
+.vs/
+*.sln
+*.vcxproj
+*.user
+*.filters
+
+# Binary files
+*.exe
+*.out
+*.app
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated cleaned data files
+Assets/DataPerso/*.clean
+Assets/centre.geojson

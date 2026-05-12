@@ -1,0 +1,88 @@
+name: Build Potoo Maps
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Prepare Artifact
+        run: |
+          mkdir -p PotooMaps-Linux
+          cp build/PotooMaps PotooMaps-Linux/
+          cp -r Assets PotooMaps-Linux/
+          tar -czvf PotooMaps-Linux.tar.gz PotooMaps-Linux/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PotooMaps-Linux
+          path: PotooMaps-Linux.tar.gz
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Prepare Artifact
+        run: |
+          mkdir PotooMaps-Windows
+          cp build/Release/PotooMaps.exe PotooMaps-Windows/
+          cp -r Assets PotooMaps-Windows/
+          Compress-Archive -Path PotooMaps-Windows/* -DestinationPath PotooMaps-Windows.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PotooMaps-Windows
+          path: PotooMaps-Windows.zip
+
+  release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PotooMaps-Linux
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: PotooMaps-Windows
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            PotooMaps-Linux.tar.gz
+            PotooMaps-Windows.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
